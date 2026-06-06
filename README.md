@@ -53,9 +53,9 @@ docker compose up -d
 
 ## 🌐 Accessing the Server
 
-The server is exposed on host port **8001** (mapping to container port 8000).
+The server is exposed on host port **8000** (mapping to container port 8000).
 
-- **URL**: `http://localhost:8001`
+- **URL**: `http://localhost:8000`
 - **Status**: The container is set to `unless-stopped`, ensuring it restarts automatically.
 
 ## 🛠️ Configuration Explanations
