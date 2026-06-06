@@ -1,122 +1,81 @@
-# llama.cpp Docker Container
+# llama.cpp CUDA Docker Container
 
-This project provides a Docker-based solution for running **llama.cpp** on GPU acceleration within a containerized environment.
+This project provides a streamlined Docker-based solution for running **llama.cpp** with NVIDIA GPU acceleration. It uses a centralized configuration file (`models.ini`) to manage multiple models and their specific inference parameters.
 
-## Prerequisites
+## 📋 Prerequisites
 
-Before setting up this project, ensure you have:
-- NVIDIA drivers installed
-- NVIDIA Container Toolkit installed
+Before setting up this project, ensure your host machine has:
+- **NVIDIA Drivers** installed.
+- **NVIDIA Container Toolkit** installed and configured.
+- **Docker** and **Docker Compose** installed.
 
-## Environment Variables
+## ⚙️ Environment Variables
 
-Copy the environment template and configure your settings:
+This project uses an environment file to manage API keys and default settings.
 
-```bash
-cp .env.skel .env
-```
+1. Copy the skeleton file to create your local environment file:
+   ```bash
+   cp .env.skel .env
+   ```
+
+2. Edit `.env` with your specific details:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DOCKER_TAG` | The Docker image tag to pull from ghcr.io (e.g., `server-cuda`, `server-cpu`) | `server-cuda` |
-| `PORT` | The host port to expose (maps to container port 8000) | `8000` |
-| `LLAMA_API_KEY` | API key for authentication (optional) | `Your secure api key here` |
+| `LLAMA_API_KEY` | API key for authentication (optional). | `Your secure api key here` |
+| `DOCKER_TAG` | The Docker image tag (e.g., `server-cuda13`). | `server-cuda13` |
+| `PORT` | The host port to expose (maps to container port 8000). | `8000` |
 
-## Installation Steps
+## 🚀 Installation & Setup
 
-### 1. Login to Github docker repository
-
-Clone the llama.cpp repository into this directory:
-
+### 1. Prepare the Models Directory
+Create the `models` folder if it doesn't exist and place your **GGUF** model files inside:
 ```bash
-docker login ghcr.io
-```
-
-### 2. Configure Models
-
-Return to the project root directory:
-
-```bash
-cd ..
 mkdir -p models
 ```
 
-Place all your **GGUF** model files into the `models` folder.
-
-Copy the template configuration file:
+### 2. Configure Model Presets
+The server uses `models.ini` to determine how to load models. 
+- Use `models.ini.skel` as a template.
+- Copy it to `models.ini` and define your models.
 
 ```bash
-cp config/models.ini.skel config/models.ini
+cp models.ini.skel models.ini
 ```
 
-Edit `config/models.ini` with your desired model settings. This configuration file references models from your `models` folder by default.
+> 💡 **Tip**: Ensure the `m` path in `models.ini` correctly points to the file inside the `./models` folder.
 
-> 📝 Example: See the [omnicoder 9b](./models/omnicoder-9b.Q4_K_M.gguf) for a working reference.
-
-### 3. Configure API Key
-
-Enter your API key in the `.env` file. If you do not wish to use an API key, simply comment out the following line in `docker-compose.yml`:
-
-```yaml
-# - LLAMA_API_KEY=${LLAMA_API_KEY}
-```
-
-### 4. Start the Container
-
-Run the following command to start the Docker container:
-
+### 3. Launch the Container
+Start the server in detached mode:
 ```bash
 docker compose up -d
 ```
 
-### 5. Access the Web Interface
+## 🌐 Accessing the Server
 
-Start the llama.cpp web interface:
+The server is exposed on host port **8001** (mapping to container port 8000).
 
-```bash
-./start-router.sh
-```
+- **URL**: `http://localhost:8001`
+- **Status**: The container is set to `unless-stopped`, ensuring it restarts automatically.
 
-The web interface will be available at: `http://localhost:8000`
+## 🛠️ Configuration Explanations
 
-In the web interface:
-- View your configured models in the dropdown menu
-- Click the **power button** on a model to load it into memory
+The following settings are defined in `docker-compose.yml`:
 
-## Router Configuration
+| Flag | Description |
+|------|-------------|
+| `--host 0.0.0.0` | Binds the server to all network interfaces. |
+| `--port 8000` | The internal port the server listens on. |
+| `--models-preset /app/models.ini` | Points the server to your configuration file. |
+| `--models-autoload` | Automatically loads models defined in the `.ini` file on startup. |
+| `--models-max 1` | Limits the number of models loaded into VRAM simultaneously. |
+| `-ngl 99` | **GPU Offloading**. `99` offloads all layers to the GPU. Reduce this value if you experience VRAM limits. |
 
-You can customize additional settings by editing the `router.sh` script in the `config` folder:
+## 📝 Customization Tips
 
-```bash
-#!/bin/bash
-exec ./llama-server \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --models-preset /app/models.ini \
-  --models-max 1 \
-  --models-autoload \
-  -ngl 99 \
-  "$@"
-```
-
-### Setting Explanations
-
-| Setting | Description |
-|---------|-------------|
-| `--host 0.0.0.0` | Bind the server to all network interfaces. Allows access from outside the container (e.g., from your host or other containers). |
-| `--port 8000` | Set the server to listen on port 8000. Change this if needed to avoid port conflicts. |
-| `--models-preset /app/models.ini` | Specify the path to the models configuration file. The server reads model definitions from this INI file. |
-| `--models-max 1` | Limit the maximum number of models that can be loaded simultaneously. Set to `1` to load only one model at a time. |
-| `--models-autoload` | Automatically load all models listed in the configuration file on startup. Remove this flag to load models manually. |
-| `-ngl 99` | Enable GPU offloading. The value `99` means offload all layers to GPU. Lower values (e.g., `-ngl 35`) can be used if you're running out of VRAM. |
-| `"$@"` | Pass any additional arguments provided to the script through to the llama-server executable. |
-
-### Customization Tips
-
-- **Multiple Models**: Increase `--models-max` if you want to load multiple models simultaneously.
-- **Port Change**: If port 8000 is in use, modify the `--port` value or use a different port.
-- **VRAM Optimization**: If you encounter out-of-memory errors, reduce the `-ngl` value to keep some layers on the CPU.
-- **Disable Autoload**: Remove `--models-autoload` to manually select models via the web interface.
+- **VRAM Optimization**: If you encounter "Out of Memory" errors, reduce the `-ngl` value in `docker-compose.yml` or within your `models.ini`.
+- **Multiple Models**: If you have enough VRAM to run multiple models at once, increase the `--models-max` value in `docker-compose.yml`.
+- **Thinking Models**: For models requiring specific jinja templates (like reasoning models), ensure `jinja = enabled` is set in your `models.ini`.
 
 ---
 
