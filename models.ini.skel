@@ -25,16 +25,27 @@ cache-type-v = {cache_type_v}
 chat-template-kwargs = {chat_template_kwargs}
 {jinja = {jinja}}
 
-; OmniCoder 9b Example
-;[Omnicoder-9B]
-;m = /models/omnicoder/omnicoder-9b-q4_k_m.gguf
-;ctx-size = 32000
-;temp = 0.6
+;[Gemma-4-12B-Reasoning]
+;m = /models/gemma/4/12b/qat/gemma-4-12B-it-qat-UD-Q4_K_XL.gguf
+;mmproj = /models/gemma/4/12b/qat/mmproj-BF16.gguf
+;ctx-size = 32768
+;batch-size = 2048
+;ubatch-size = 512
+;temp = 1.0
 ;top-p = 0.95
-;top-k = 20
-;n-predict = 16000
-;ngl = 99
+;top-k = 64
+;jinja = enabled
+;ngl = 999
+;fit = off
 ;flash-attn = auto
-;cache-type-k = q8_0
-;cache-type-v = q8_0
+;cache-type-k = q4_0
+;cache-type-v = q4_0
 ;chat-template-kwargs = {"enable_thinking": true}
+
+; Settings for speculative decoding
+;;md = /models/gemma/4/12b/qat/gemma-4-12B-it-qat-assistant-MTP-Q8_0.gguf
+;;ngld = 999
+;;spec-type = draft-mtp
+;;spec-draft-n-max = 3
+;;spec-draft-type-k = q8_0
+;;spec-draft-type-v = q8_0
